@@ -1,0 +1,185 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(networkD3) #tried this for sankey diagrams
+library(ggalluvial) #Seems like a more simpler ggplot2 based package for creating sankeys
+library(extrafont)
+library(waffle) #for waffle charts
+library(cowplot) # For combining plots
+
+
+gdpr_violations <- readr::read_tsv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-21/gdpr_violations.tsv')
+gdpr_text <- readr::read_tsv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-21/gdpr_text.tsv')
+
+
+```
+
+
+```{r}
+
+gdpr_violations
+
+#Exploring cumulative GDPR fines levied
+gdpr_violations %>% 
+  mutate(date = mdy(date)) %>% 
+  select(id, price, date) %>%
+  group_by(date) %>% 
+  summarise(price = sum(price)) %>% 
+  mutate(cum_sum = cumsum(price)) %>% 
+  ggplot(aes(x = date, y = cum_sum, group = 1))+
+  geom_col()+
+  scale_y_continuous(labels = scales::comma_format())
+#Date prior to 1980 - GDPR was applicable since 2019!
+
+```
+
+```{r}
+
+#Separating out articles which were violated
+
+gdpr_violations %>% 
+  separate_rows(article_violated,sep = "[|]") %>% 
+  select(id, authority, price, date, controller, article_violated) %>% 
+  mutate(article_violated = str_remove(article_violated, "GDPR"),
+         article = case_when(str_detect(article_violated, "Art. 5") == TRUE ~ "Art. 5",
+                             str_detect(article_violated, "Art. 28") == TRUE ~ "Art. 28",
+                             str_detect(article_violated, "Art. 12") == TRUE ~ "Art. 12",
+                             str_detect(article_violated, "Art. 13") == TRUE ~ "Art. 13",
+                             str_detect(article_violated, "Art. 15") == TRUE ~ "Art. 15",
+                             str_detect(article_violated, "Art. 6") == TRUE ~ "Art. 6",
+                             str_detect(article_violated, "Art 6") == TRUE ~ "Art. 5",
+                             str_detect(article_violated, "Art. 25") == TRUE ~ "Art. 5",
+                             str_detect(article_violated, "Art. 33") == TRUE ~ "Art. 5",
+                             str_detect(article_violated, "Art. 34") == TRUE ~ "Art. 5",
+                             TRUE ~ article_violated),
+         article = fct_lump(article, 8)) %>%
+  group_by(article) %>% 
+  summarise(n = n()) %>% 
+  arrange(desc(n))
+
+gdpr_violations %>% 
+  separate_rows(article_violated,sep = "[|]") %>% 
+  select(id, authority, price, date, controller, article_violated) %>% 
+  mutate(article_violated = str_remove(article_violated, "GDPR"),
+         article = case_when(str_detect(article_violated, "Art. 5") == TRUE ~ "Art. 5",
+                             TRUE ~ article_violated)) %>%
+  group_by(article_violated) %>% 
+  summarise(n = n()) %>% 
+  arrange(desc(n))
+
+```
+
+```{r}
+
+#Creating sankey
+
+#Data prep
+mapping <- gdpr_violations %>% 
+  mutate(article_violated = str_remove(article_violated, "GDPR"),
+         article = case_when(str_detect(article_violated, "Art. 5") == TRUE ~ "Art. 5",
+                             str_detect(article_violated, "Art. 28") == TRUE ~ "Art. 28",
+                             str_detect(article_violated, "Art. 12") == TRUE ~ "Art. 12",
+                             str_detect(article_violated, "Art. 13") == TRUE ~ "Art. 13",
+                             str_detect(article_violated, "Art. 15") == TRUE ~ "Art. 15",
+                             str_detect(article_violated, "Art. 6") == TRUE ~ "Art. 6",
+                             str_detect(article_violated, "Art 6") == TRUE ~ "Art. 5",
+                             str_detect(article_violated, "Art. 25") == TRUE ~ "Art. 5",
+                             str_detect(article_violated, "Art. 33") == TRUE ~ "Art. 5",
+                             str_detect(article_violated, "Art. 34") == TRUE ~ "Art. 5",
+                             TRUE ~ article_violated)) %>%
+  mutate(name = fct_lump(name, 7, other_level = "Other Countries"),
+         article = fct_lump(article, 5, other_level = "Other")) %>% 
+  count(article, name)
+
+links <- data.frame(source = mapping$article,
+                    target = mapping$name,
+                    values = mapping$n)
+
+#Creating the nodes
+nodes <- data.frame(name = c(as.character(links$source), as.character(links $target)) %>% 
+  unique())
+
+#Creating the links
+links$IDsource <- match(links$source, nodes$name)-1
+links$IDtarget <- match(links$target, nodes$name)-1
+
+#plot 
+q <- sankeyNetwork(Links = links, Nodes = nodes,
+              Source = "IDsource", Target = "IDtarget",
+              Value = "values", NodeID = "name", 
+              sinksRight=FALSE,
+              fontSize = 12)
+
+
+q
+
+
+```
+
+```{r}
+
+#Sankey from GGAluivial package
+
+plot1 <- mapping %>% 
+  ggplot(aes(y = n, axis1 = article, axis2 = name))+
+  geom_alluvium(aes(fill = name), alpha = 0.9, width = 1/12)+
+  geom_stratum(width = 1/12, alpha = 0.5, fill = "deeppink3", color = "white", size = 1)+
+  geom_text(stat = "stratum", infer.label = TRUE, nudge_x = 0.05, hjust = "left", color = "white", fontface = "bold", family = "Verdana" )+
+  geom_text(aes(x = 0.25, y = 250), label = "GDPR Violations:\nWhich Articles of the \nGDPR Law were \nviolated in which \ncountries?", hjust = "left", vjust = "top", size = 8, color = "white", family = "Verdana" )+
+  labs(x = "",
+       y= "")+
+  theme_void()+
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text = element_blank(),
+        panel.background = element_rect(fill = "gray50"))+
+  expand_limits(x = c(0.35, 2.3))+
+  scale_fill_brewer(palette = "RdPu")
+  
+
+plot1
+
+```
+
+```{r}
+
+#Waffle chart
+
+gdpr_violations %>%
+  mutate(controller = str_replace(controller, "Google Inc.", "Google" )) %>% 
+  group_by(controller) %>% 
+  summarise(fines = sum(price)) %>% 
+  arrange(desc(fines)) %>% 
+  mutate(percentage = round(fines/ sum(fines),2))
+
+plot2 <-  waffle(c('Google' = 37, 'TIM'= 18 , 'Austrian Post'=12),
+       colors = c("#381460","#b21f66","#fe346e","#ffbd69", "gray50"),
+       size = 2,
+       pad = 3,
+       legend_pos = "none")
+
+plot3 <- plot2 +
+  expand_limits(x = c(-5,15), y = c(-7,15))+
+  geom_text(aes(x = 6, y = 14), label = "Three controllers account \nfor 2/3rds of the fines levied\n(Under GDPR Law)", hjust = "centre", vjust = "top", size = 8, color = "white", fontface = "bold", family = "Verdana" )+
+  annotate("text", x = -3, y= -0.5, label = "Google was fined €5.7m \nby the French and Swedish \ndata protection authorities in \n2019 & 2020", hjust = "left", vjust = "top", size = 3, color = "white",family = "Verdana")+
+  annotate("text", x = 3, y= -4, label = "TIM (a telecom provider), \nwas fined €27m in Feb 2020, \nby the Italian Data \nProtection Authority", hjust = "left",vjust = "top", size = 3,color = "white",family = "Verdana")+
+  annotate("text", x = 8, y= -0.5, label = "Austrian Post was fined \n€18m by the Austrian Data \nProtection Authority", hjust = "left",vjust = "top", size = 3, color = "white", family = "Verdana")+
+  annotate("curve", x = -2, xend = 0, y = -0.5, yend = 2, color = "white", arrow = arrow(length = unit(0.1, "inches")), curvature = -0.5)+
+ annotate("curve", x = 5, xend = 5.5, y = -4, yend = 0, color = "white", arrow = arrow(length = unit(0.1, "inches")), curvature = 0.2)+
+ annotate("curve", x = 8, xend = 7, y = -1, yend = 1, color = "white", arrow = arrow(length = unit(0.1, "inches")), curvature = -0.5)+
+ theme(legend.position = "none",
+       panel.background = element_rect(fill = "gray50"))
+  
+
+plot3
+
+
+```
+
+
