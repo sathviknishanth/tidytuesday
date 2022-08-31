@@ -1,0 +1,33 @@
+---
+title: "psychometrics"
+author: "sathvik"
+date: "2022-08-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(tidytuesdayR)
+
+tuesdata <- tidytuesdayR::tt_load('2022-08-16')
+characters <- tuesdata$characters
+myers_briggs <- tuesdata$myers_briggs
+psych_stats <- tuesdata$psych_stats
+
+```
+
+
+```{r}
+
+psych_stats %>% 
+  count(question)
+psych_stats %>% 
+  count(char_name)
+psych_stats %>% 
+  count(uni_name)
+
+psych_stats %>% 
+  filter(char_name == "Keeley Jones")
+
+```
+
