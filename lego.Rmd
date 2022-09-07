@@ -1,0 +1,378 @@
+---
+title: "lego"
+author: "sathvik"
+date: "2022-09-07"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(tidytuesdayR)
+library(magick)
+library(cowplot)
+
+inventories <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-09-06/inventories.csv.gz')
+inventory_sets <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-09-06/inventory_sets.csv.gz')
+sets <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-09-06/sets.csv.gz')
+
+
+```
+
+```{r data exploration}
+# Not used in final plot - exploring data
+
+summary_sets <- sets %>% 
+  mutate(theme_id = as.factor(theme_id)) %>% 
+  group_by(year) %>% 
+  summarise(parts = sum(num_parts),
+            sets = n_distinct(set_num)) %>% 
+  mutate(parts_per_set = parts/sets) %>% 
+  ungroup()
+            
+summary_sets %>%  
+  ggplot(aes(x = year, y = sets, group = 1))+
+  geom_line()
+
+summary_sets %>%  
+  ggplot(aes(x = year, y = parts_per_set, group = 1))+
+  geom_line()
+
+top_sets <- sets %>% 
+  slice_max(n = 15, order_by = num_parts)
+
+top_sets %>% 
+  mutate(name_mod = paste0(name, "(", set_num,")"),
+         name_mod = fct_reorder(name_mod, num_parts)) %>% 
+  ggplot(aes(x = num_parts, y = name_mod))+
+    geom_col()
+
+```
+```{r}
+# waffle chart 
+# 1 - World Map
+
+x <- seq(1,25,1)
+y <- seq(1,25,1)
+
+xy <- crossing(x,y)
+
+xy %>% 
+  ggplot(aes(x = x, y = y))+
+  geom_point(size = 3, shape = 16)+
+  expand_limits(x = 25, y = 50)
+
+world_map <- 11695/12500*625
+
+
+world_map_y = world_map%/%25
+world_map_x = world_map%%25
+world_map_img <- image_read("https://cdn.rebrickable.com/media/sets/31203-1.jpg")
+
+plot_worldmap <- xy %>% 
+  mutate(color = if_else(y<world_map_y+1, "yes",if_else(y > world_map_y+1, "no",if_else(x<world_map_x,"yes" ,"no")))) %>% 
+  ggplot(aes(x = x, y = y, color = color))+
+  geom_point(size = 3, shape = 16)+
+  geom_text(aes(x = 12.5, y = 27),label = "World Map (2021)\n11,695 pieces", size = 5)+
+  expand_limits(x = 25, y = 50)+
+  theme_void()+
+  theme(legend.position = "none",
+        title = element_text(color = "#D61C4E", hjust = 0.5),
+        plot.margin = unit(c(0, 0, 0, 0), "cm"))+
+  scale_color_manual(values = c("#D61C4E","#FEDB39"))+
+  coord_fixed()
+
+final_world_map <- ggdraw()+
+  draw_plot(plot_worldmap)+
+  draw_image(world_map_img, x = 0, y = 0.2, scale = 0.3)
+
+ggsave("1_map.png", plot = final_world_map, device = "png", width = 10, height = 10)
+
+
+```
+
+
+```{r}
+# 2 - The Ultimate Battle for Chima (2015)
+
+chima <- 9987/12500*625
+
+
+chima_y = chima%/%25
+chima_x = chima%%25
+chima_img <- image_read("https://cdn.rebrickable.com/media/sets/bigbox-1.jpg")
+
+plot_chima <- xy %>% 
+  mutate(color = if_else(y<chima_y+1, "yes",if_else(y > chima_y+1, "no",if_else(x<chima_x,"yes" ,"no")))) %>% 
+  ggplot(aes(x = x, y = y, color = color))+
+  geom_point(size = 3, shape = 16)+
+  geom_text(aes(x = 12.5, y = 27),label = "The Ultimate Battle for Chima (2015)\n9,987 pieces", size = 5)+
+  expand_limits(x = 25, y = 50)+
+  theme_void()+
+  theme(legend.position = "none",
+        title = element_text(color = "#D61C4E", hjust = 0.5),
+        plot.margin = unit(c(0, 0, 0, 0), "cm"))+
+  scale_color_manual(values = c("#D61C4E","#FEDB39"))+
+  coord_fixed()
+
+final_chima <- ggdraw()+
+  draw_plot(plot_chima)+
+  draw_image(chima_img, x = 0, y = 0.2, scale = 0.3)
+
+ggsave("2_chima.png", plot = final_chima, device = "png", width = 10, height = 10)
+
+
+```
+
+```{r}
+# 3 - Titanic (2021) 9092 pieces
+
+titanic <- 9092/12500*625
+
+
+titanic_y = titanic%/%25
+titanic_x = titanic%%25
+titanic_img <- image_read("https://cdn.rebrickable.com/media/sets/10294-1.jpg")
+
+plot_titanic <- xy %>% 
+  mutate(color = if_else(y<titanic_y+1, "yes",if_else(y > titanic_y+1, "no",if_else(x<titanic_x,"yes" ,"no")))) %>% 
+  ggplot(aes(x = x, y = y, color = color))+
+  geom_point(size = 3, shape = 16)+
+  geom_text(aes(x = 12.5, y = 27),label = "Titanic (2021)\n9,092 pieces", size = 5)+
+  expand_limits(x = 25, y = 50)+
+  theme_void()+
+  theme(legend.position = "none",
+        title = element_text(color = "#D61C4E", hjust = 0.5),
+        plot.margin = unit(c(0, 0, 0, 0), "cm"))+
+  scale_color_manual(values = c("#D61C4E","#FEDB39"))+
+  coord_fixed()
+
+final_titanic <- ggdraw()+
+  draw_plot(plot_titanic)+
+  draw_image(titanic_img, x = 0, y = 0.2, scale = 0.3)
+
+ggsave("3_titanic.png", plot = final_titanic, device = "png", width = 10, height = 10)
+
+
+```
+
+```{r}
+# 4 Colosseum (2020) 9036 Pieces
+
+colosseum <- 9036/12500*625
+
+
+colosseum_y = colosseum%/%25
+colosseum_x = colosseum%%25
+colosseum_img <- image_read("https://cdn.rebrickable.com/media/sets/10276-1.jpg")
+
+plot_colosseum <- xy %>% 
+  mutate(color = if_else(y<colosseum_y+1, "yes",if_else(y > colosseum_y+1, "no",if_else(x<colosseum_x,"yes" ,"no")))) %>% 
+  ggplot(aes(x = x, y = y, color = color))+
+  geom_point(size = 3, shape = 16)+
+  geom_text(aes(x = 12.5, y = 27),label = "Colosseum (2020)\n9,036 pieces", size = 5)+
+  expand_limits(x = 25, y = 50)+
+  theme_void()+
+  theme(legend.position = "none",
+        title = element_text(color = "#D61C4E", hjust = 0.5),
+        plot.margin = unit(c(0, 0, 0, 0), "cm"))+
+  scale_color_manual(values = c("#D61C4E","#FEDB39"))+
+  coord_fixed()
+
+final_colosseum <- ggdraw()+
+  draw_plot(plot_colosseum)+
+  draw_image(colosseum_img, x = 0, y = 0.2, scale = 0.3)
+
+ggsave("4_colosseum.png", plot = final_colosseum, device = "png", width = 10, height = 10)
+
+```
+
+```{r}
+
+# 5 Millennium Falcon (2017) 7541 Pieces
+
+millenium <- 7541/12500*625
+
+
+millenium_y = millenium%/%25
+millenium_x = millenium%%25
+millenium_img <- image_read("https://cdn.rebrickable.com/media/sets/75192-1.jpg")
+
+plot_millenium <- xy %>% 
+  mutate(color = if_else(y<millenium_y+1, "yes",if_else(y > millenium_y+1, "no",if_else(x<millenium_x,"yes" ,"no")))) %>% 
+  ggplot(aes(x = x, y = y, color = color))+
+  geom_point(size = 3, shape = 16)+
+  geom_text(aes(x = 12.5, y = 27),label = "The Millenium Falcon (2017)\n7,541 pieces", size = 5)+
+  expand_limits(x = 25, y = 50)+
+  theme_void()+
+  theme(legend.position = "none",
+        title = element_text(color = "#D61C4E", hjust = 0.5),
+        plot.margin = unit(c(0, 0, 0, 0), "cm"))+
+  scale_color_manual(values = c("#D61C4E","#FEDB39"))+
+  coord_fixed()
+
+final_millenium <- ggdraw()+
+  draw_plot(plot_millenium)+
+  draw_image(millenium_img, x = 0, y = 0.2, scale = 0.3)
+
+ggsave("5_millenium.png", plot = final_millenium, device = "png", width = 10, height = 10)
+
+```
+
+```{r}
+# 6 - AT-AT (2021) 6785 Pieces
+
+atat <- 6785/12500*625
+
+
+atat_y = atat%/%25
+atat_x = atat%%25
+atat_img <- image_read("https://cdn.rebrickable.com/media/sets/75313-1.jpg")
+
+plot_atat <- xy %>% 
+  mutate(color = if_else(y<atat_y+1, "yes",if_else(y > atat_y+1, "no",if_else(x<atat_x,"yes" ,"no")))) %>% 
+  ggplot(aes(x = x, y = y, color = color))+
+  geom_point(size = 3, shape = 16)+
+  geom_text(aes(x = 12.5, y = 27),label = "AT-AT (2021)\n6,785 pieces", size = 5)+
+  expand_limits(x = 25, y = 50)+
+  theme_void()+
+  theme(legend.position = "none",
+        title = element_text(color = "#D61C4E", hjust = 0.5),
+        plot.margin = unit(c(0, 0, 0, 0), "cm"))+
+  scale_color_manual(values = c("#D61C4E","#FEDB39"))+
+  coord_fixed()
+
+final_atat <- ggdraw()+
+  draw_plot(plot_atat)+
+  draw_image(atat_img, x = 0, y = 0.2, scale = 0.3)
+
+ggsave("6_atat.png", plot = final_atat, device = "png", width = 10, height = 10)
+
+
+
+
+```
+
+```{r}
+
+# 7 - Hogwarts Castle - 2018 - 6020 pieces
+
+hogwarts <- 6020/12500*625
+
+
+hogwarts_y = hogwarts%/%25
+hogwarts_x = hogwarts%%25
+hogwarts_img <- image_read("https://cdn.rebrickable.com/media/sets/71043-1.jpg")
+
+plot_hogwarts <- xy %>% 
+  mutate(color = if_else(y<hogwarts_y+1, "yes",if_else(y > hogwarts_y+1, "no",if_else(x<hogwarts_x,"yes" ,"no")))) %>% 
+  ggplot(aes(x = x, y = y, color = color))+
+  geom_point(size = 3, shape = 16)+
+  geom_text(aes(x = 12.5, y = 27),label = "Hogwarts Castle (2018)\n6,020 pieces", size = 5)+
+  expand_limits(x = 25, y = 50)+
+  theme_void()+
+  theme(legend.position = "none",
+        title = element_text(color = "#D61C4E", hjust = 0.5),
+        plot.margin = unit(c(0, 0, 0, 0), "cm"))+
+  scale_color_manual(values = c("#D61C4E","#FEDB39"))+
+  coord_fixed()
+
+final_hogwarts <- ggdraw()+
+  draw_plot(plot_hogwarts)+
+  draw_image(hogwarts_img, x = 0, y = 0.2, scale = 0.3)
+
+ggsave("7_hogwarts.png", plot = final_hogwarts, device = "png", width = 10, height = 10)
+
+
+```
+
+```{r}
+# 8 - Taj Mahal (Set 10256-1) - 2017 - 5923 pieces
+
+taj_1 <- 5923/12500*625
+
+
+taj_1_y = taj_1%/%25
+taj_1_x = taj_1%%25
+taj_1_img <- image_read("https://cdn.rebrickable.com/media/sets/10256-1.jpg")
+
+plot_taj_1 <- xy %>% 
+  mutate(color = if_else(y<taj_1_y+1, "yes",if_else(y > taj_1_y+1, "no",if_else(x<taj_1_x,"yes" ,"no")))) %>% 
+  ggplot(aes(x = x, y = y, color = color))+
+  geom_point(size = 3, shape = 16)+
+  geom_text(aes(x = 12.5, y = 27),label = "Taj Mahal (2017)\n5,923 pieces", size = 5)+
+  expand_limits(x = 25, y = 50)+
+  theme_void()+
+  theme(legend.position = "none",
+        title = element_text(color = "#D61C4E", hjust = 0.5),
+        plot.margin = unit(c(0, 0, 0, 0), "cm"))+
+  scale_color_manual(values = c("#D61C4E","#FEDB39"))+
+  coord_fixed()
+
+final_taj_1 <- ggdraw()+
+  draw_plot(plot_taj_1)+
+  draw_image(taj_1_img, x = 0, y = 0.2, scale = 0.3)
+
+ggsave("8_taj_1.png", plot = final_taj_1, device = "png", width = 10, height = 10)
+
+
+```
+
+```{r}
+
+# 9 - Taj Mahal (Set 10189-1) - 2008 - 5922 pieces
+
+taj_2 <- 5922/12500*625
+
+
+taj_2_y = taj_2%/%25
+taj_2_x = taj_2%%25
+taj_2_img <- image_read("https://cdn.rebrickable.com/media/sets/10189-1.jpg")
+
+plot_taj_2 <- xy %>% 
+  mutate(color = if_else(y<taj_2_y+1, "yes",if_else(y > taj_2_y+1, "no",if_else(x<taj_2_x,"yes" ,"no")))) %>% 
+  ggplot(aes(x = x, y = y, color = color))+
+  geom_point(size = 3, shape = 16)+
+  geom_text(aes(x = 12.5, y = 27),label = "Taj Mahal (2008)\n5,922 pieces", size = 5)+
+  expand_limits(x = 25, y = 50)+
+  theme_void()+
+  theme(legend.position = "none",
+        title = element_text(color = "#D61C4E", hjust = 0.5),
+        plot.margin = unit(c(0, 0, 0, 0), "cm"))+
+  scale_color_manual(values = c("#D61C4E","#FEDB39"))+
+  coord_fixed()
+
+final_taj_2 <- ggdraw()+
+  draw_plot(plot_taj_2)+
+  draw_image(taj_2_img, x = 0, y = 0.2, scale = 0.3)+
+  theme(plot.margin = unit(c(0,0,0,0), "cm"))
+
+ggsave("9_taj_2.png", plot = final_taj_2, device = "png", width = 10, height = 10)
+
+
+```
+
+```{r}
+# Combining plots
+
+title <- ggdraw() + 
+  draw_label(
+    "The top lego sets in terms of number of parts",
+    fontface = 'bold',
+    size = 48,
+    color = "#D61C4E")
+     
+
+
+final_plot <- plot_grid(final_world_map, final_chima, final_titanic, final_colosseum, final_millenium,
+                        final_atat, final_hogwarts, final_taj_1, final_taj_2, ncol = 3)
+
+final_plot_with_title <- plot_grid(title, final_plot, ncol = 1, rel_heights = c(0.05,1))
+
+ggsave("final_plot_with_title.png", plot = final_plot_with_title, device = "png", width = 25, height = 25, dpi = 300)
+
+
+
+
+
+```
+
