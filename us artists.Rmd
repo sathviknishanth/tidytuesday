@@ -1,0 +1,45 @@
+```{r}
+library(tidyverse)
+library(janitor)
+library(MetBrewer)
+library(showtext)
+showtext_auto()
+rubik = google_fonts("Rubik")
+font_install(rubik)
+
+artists <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-09-27/artists.csv')
+
+theme_set(theme_void()+
+            theme(plot.title = element_text(family = "Rubik", size = 20),
+                  legend.position = "bottom",
+                  strip.background = element_rect(color = "#FF9494"),
+                  strip.text = element_text(size = 14, face = "bold")))
+
+```
+
+```{r}
+
+artists_data <- artists %>% 
+  mutate(state = str_to_lower(state)) %>% 
+  group_by(type, state) %>% 
+  summarise(all_workers = sum(all_workers_n, na.rm = TRUE),
+            artists = sum(artists_n, na.rm = TRUE),
+            location_quotient = mean(location_quotient, na.rm = TRUE)) %>% 
+  mutate(artist_prop = artists/all_workers) %>% 
+  ungroup()
+
+map_data("state") %>%
+  left_join(artists_data, by  = c(region = "state")) %>% 
+  ggplot()+
+  geom_polygon(aes(x = long, y = lat, fill = artists, group =  group))+
+  facet_wrap(~type)+
+  scale_fill_met_c(name = "Java")+
+  coord_map()+
+  labs(title = "Where do you find different artists across the US?",
+       subtitle = "",
+       fill = "",
+       caption = "Tidy Tuesday, Week 39/2022 | @sathviknishanth")
+
+
+```
+
