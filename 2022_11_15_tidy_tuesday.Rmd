@@ -1,0 +1,100 @@
+---
+title: "TidyTemplate"
+date: 2022-11-15
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytuesdayR)
+library(lubridate)
+library(showtext)
+library(ggthemes)
+library(patchwork)
+font_add_google("Roboto")
+showtext_auto()
+
+```
+
+# Load the weekly Data
+
+Download the weekly data and make available in the `tt` object.
+
+```{r Load}
+
+image_alt <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-11-15/image_alt.csv') %>% 
+  mutate(date = as_date(date))
+
+
+color_contrast <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-11-15/color_contrast.csv') %>% 
+  mutate(date = as_date(date))
+
+ally_scores <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-11-15/ally_scores.csv')%>% 
+  mutate(date = as_date(date))
+
+bytes_total <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-11-15/bytes_total.csv')%>% 
+  mutate(date = as_date(date))
+
+
+speed_index <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-11-15/speed_index.csv')%>% 
+  mutate(date = as_date(date))
+
+all_data <- (rbind(ally_scores,bytes_total,speed_index))
+
+```
+
+```{r}
+p1 <- bytes_total %>% 
+  ggplot(aes(x = date, y = p50))+
+  geom_ribbon(aes(ymin = p25, ymax = p75, fill = client), alpha = 0.5)+
+  geom_line(aes(color = client))+
+  annotate("text", x = as.Date("2011-01-01"), y = 4000, label = "Webpages have been getting", size = 12,hjust = "left", color = "#153462")+
+  annotate("text", x = as.Date("2011-01-01"), y = 3400, label = "heavier over time, but...", size = 12,hjust = "left", color = "#153462")+
+  expand_limits(y = 0)+
+  labs(x = "",
+       y = "Total Bytes",
+       title = "Web Performance Metrics (Size and Speed)")+
+  theme_minimal()+
+  expand_limits(x = as.Date("2010-11-15"))+
+  scale_fill_manual(values = c("#F49D1A", "#0D4C92"))+
+  scale_color_manual(values = c("#F49D1A", "#0D4C92"))+
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        plot.title = element_text(size = 32))
+
+
+```
+
+
+
+```{r}
+
+p2 <- speed_index%>% 
+  ggplot(aes(x = date, y = p50))+
+  geom_ribbon(aes(ymin = p25, ymax = p75, fill = client), alpha = 0.5)+
+  geom_line(aes(color = client))+
+  annotate("text", x = as.Date("2012-06-01"), y = 10, label = "...the speeds have ", size = 12,hjust = "left", color = "#153462")+
+  annotate("text", x = as.Date("2012-06-01"), y = 8.5, label = "been consistent", size = 12,hjust = "left", color = "#153462")+
+  annotate("text", x = as.Date("2012-06-01"), y = 7, label = "(Data only from 2016)", size = 9,hjust = "left", color = "#153462")+
+  expand_limits(y = 0)+
+  labs(x = "",
+       y = "Speed Index (seconds)",
+       caption = "VizBy: @sathviknishanth | Source: httparchive.org - TidyTuesday 2022/Nov/15")+
+  theme_minimal()+
+  expand_limits(x = as.Date("2010-11-15"))+
+  scale_fill_manual(values = c("#EB6440", "#497174"))+
+  scale_color_manual(values = c("#EB6440", "#497174"))+
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
+
+```
+
+```{r}
+p1/p2
+
+```
+
