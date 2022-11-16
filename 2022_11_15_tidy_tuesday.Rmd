@@ -64,7 +64,9 @@ p1 <- bytes_total %>%
   scale_color_manual(values = c("#F49D1A", "#0D4C92"))+
   theme(legend.position = "bottom",
         legend.title = element_blank(),
-        plot.title = element_text(size = 32))
+        plot.title = element_text(size = 32, color = "#153462", face = "bold"),
+        axis.text = element_text(size = 13, color = "#153462", face = "bold"),
+        axis.title = element_text(size = 13, color = "#153462", face = "bold"))
 
 
 ```
@@ -78,8 +80,8 @@ p2 <- speed_index%>%
   geom_ribbon(aes(ymin = p25, ymax = p75, fill = client), alpha = 0.5)+
   geom_line(aes(color = client))+
   annotate("text", x = as.Date("2012-06-01"), y = 10, label = "...the speeds have ", size = 12,hjust = "left", color = "#153462")+
-  annotate("text", x = as.Date("2012-06-01"), y = 8.5, label = "been consistent", size = 12,hjust = "left", color = "#153462")+
-  annotate("text", x = as.Date("2012-06-01"), y = 7, label = "(Data only from 2016)", size = 9,hjust = "left", color = "#153462")+
+  annotate("text", x = as.Date("2012-06-01"), y = 8, label = "remained consistent", size = 12,hjust = "left", color = "#153462")+
+  annotate("text", x = as.Date("2012-06-01"), y = 6, label = "(Data only from 2016)", size = 9,hjust = "left", color = "#153462")+
   expand_limits(y = 0)+
   labs(x = "",
        y = "Speed Index (seconds)",
@@ -89,7 +91,10 @@ p2 <- speed_index%>%
   scale_fill_manual(values = c("#EB6440", "#497174"))+
   scale_color_manual(values = c("#EB6440", "#497174"))+
   theme(legend.position = "bottom",
-        legend.title = element_blank())
+        legend.title = element_blank(),
+        plot.caption = element_text(size = 12, color = "#153462", face = "bold"),
+        axis.text = element_text(size = 13, color = "#153462", face = "bold"),
+        axis.title = element_text(size = 13, color = "#153462", face = "bold"))
 
 ```
 
